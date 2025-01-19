@@ -128,9 +128,8 @@ def load_csv_and_parse(
     return products
 
 
-def main():
+def main(csv_path: str = "data/data.csv"):
     # CSV path
-    csv_path = "data/data.csv"
     logging.info(f"Reading CSV to build frequency map: {csv_path}")
 
     # 1) First pass: build frequency map
@@ -236,8 +235,19 @@ def main():
 
 
 if __name__ == "__main__":
-    import os 
+    import os
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run the data parser.")
+    parser.add_argument(
+        "-p",
+        "--path",
+        type=str,
+        default="data/data.csv",
+        help="Path to the input CSV file."
+    )
+    args = parser.parse_args()
     database_name = "products.db"
     if os.path.exists(database_name):
         os.remove(database_name)
-    main()
+    main(csv_path=args.path)

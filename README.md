@@ -145,13 +145,12 @@ To run the **entire pipeline**:
    - `product_id`
    - `product_category`
    - `care_label`
-2. Update paths and DB settings in **`main.py`** if necessary.
-3. Run:
+2. Run:
 
    ```bash
-   python main.py
+    python main.py -p data/data.csv 
    ```
-
+3. Analyse products.db in a notebook, see notebook.ipynb for reference.
 ---
 
 ## Configuration
@@ -170,6 +169,44 @@ To run the **entire pipeline**:
 - **Regex Patterns** in `constants.py` can be customized if care labels have unusual formatting.
 
 ---
+# Text Normalization and Database Schema Explanation
+
+## Text Normalization
+
+Text normalization is a critical step in ensuring consistency across the parsed data. The pipeline implements normalization at several levels:
+
+### Category, Part Name, and Subcategory
+These fields are standardized by converting them to lowercase and ensuring they are in their singular form. For example, `"ACCESSORIES/PHONE-CASES"` becomes `"accessory"` for the category and `"phone-case"` for the subcategory.
+
+### Fiber Name Regularization
+Fiber names, which can often be messy due to variations in spelling, punctuation, or case, are first normalized (e.g., lowercased and stripped of extraneous characters) and then further refined using fuzzy matching with `fuzzywuzzy`. This ensures that similar fiber descriptions (e.g., `"Cottons"`, `"cotton"`, or `"cotton®"`) are mapped to a canonical version such as `"cotton"`. We also store brand or other metadata information in separate columns "brand", "made_in_france"...
+
+This normalization process significantly improves the consistency and quality of the final exported data, making downstream analysis more reliable.
+
+## Database Schema Explanation
+
+The pipeline is designed around three core models which map directly to database tables:
+
+### Product Table
+- **Fields:** `product_id`, `product_category`, `product_sub_category`, `original_care_label`
+- **Rationale:**  
+  This table stores information at the product level. The category and subcategory fields are normalized (lowercase and singular) to maintain uniformity, allowing easy grouping and filtering during analysis.
+
+### Part Table
+- **Fields:** `part_id` (unique), `product_id`, `name`, `weight`, `weight_unit`
+- **Rationale:**  
+  A product's care label may include multiple parts (e.g., "main", "lining", "reinforcement"). By storing these in a dedicated Part table and linking them to the product via `product_id`, we capture this hierarchical structure and facilitate queries that differentiate between different fabric parts.
+
+### Fiber Table
+- **Fields:** `fiber_id`, `product_id`, `part_id`, `name`, `proportion`, `brand`, `original_fiber_name`, `made_in_france`, `solution_dyed`, `recycled`
+- **Rationale:**  
+  Each fabric part may contain multiple fiber types, each with its associated percentage and metadata. The fiber names undergo normalization and fuzzy matching to ensure consistency, and additional fields capture metadata (e.g., whether the fiber is recycled or made in France). This granular level of detail supports detailed material analyses and quality checks.
+
+The separation of data into these tables follows a normalized relational design. This approach:
+- Minimizes data redundancy.
+- Improves data integrity.
+- Facilitates complex queries (e.g., summing fiber percentages per part or categorizing products by subcategory).
+
 
 ## Extending & Customizing
 
