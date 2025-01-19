@@ -12,6 +12,8 @@ from src.constants import (
 from fuzzywuzzy import process, fuzz
 
 logging.basicConfig(level=logging.INFO)
+import inflect
+
 
 
 class FiberParser:
@@ -258,3 +260,17 @@ def split_category_subcategory(cat_str: str) -> Tuple[str, str]:
     """
     parts = cat_str.split("/", 1)
     return (parts[0], parts[1]) if len(parts) == 2 else (cat_str, "")
+
+p = inflect.engine()
+def clean_text(text: str) -> str:
+    """
+    Clean text by removing unwanted characters and collapsing spaces.
+    """
+    text = re.sub(r"[^a-zA-Z0-9\s]", " ", text)
+    text = " ".join(text.split()).lower()
+    # remove plural forms
+    singular = p.singular_noun(text)
+    if singular:
+        text = singular
+
+    return text

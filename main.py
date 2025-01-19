@@ -8,6 +8,7 @@ from src.data_cleaning import (
     FuzzyFiberMatcher,
     normalize_fiber_name,
     split_category_subcategory,
+    clean_text
 )
 from src.models import Product, Part, Fiber
 from src.sql_export import SQLExporter
@@ -79,7 +80,7 @@ def parse_product_care_label(
         part_obj = Part(
             part_id=current_part_id,
             product_id=product_id,
-            name=part_dict["fabric_part"],
+            name=clean_text(part_dict["fabric_part"]),
             weight=part_dict["weight"],
             weight_unit=part_dict["weight_unit"],
             fibers=fibers_list,
@@ -89,8 +90,8 @@ def parse_product_care_label(
 
     product_obj = Product(
         product_id=product_id,
-        product_category=product_category,
-        product_sub_category=product_sub_category,
+        product_category=clean_text(product_category),
+        product_sub_category=clean_text(product_sub_category),
         original_care_label=care_label,
         parts=parts_list,
     )
@@ -235,4 +236,8 @@ def main():
 
 
 if __name__ == "__main__":
+    import os 
+    database_name = "products.db"
+    if os.path.exists(database_name):
+        os.remove(database_name)
     main()
