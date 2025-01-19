@@ -200,12 +200,12 @@ The pipeline is designed around three core models which map directly to database
   This table stores information at the product level. The category and subcategory fields are normalized (lowercase and singular) to maintain uniformity, allowing easy grouping and filtering during analysis.
 
 ### Part Table
-- **Fields:** `part_id` (unique), `product_id`, `name`, `weight`, `weight_unit`
+- **Fields:** `part_id` (unique), `product_id`, `part_name`, `part_weight`, `part_weight_unit`
 - **Rationale:**  
   A product's care label may include multiple parts (e.g., "main", "lining", "reinforcement"). By storing these in a dedicated Part table and linking them to the product via `product_id`, we capture this hierarchical structure and facilitate queries that differentiate between different fabric parts.
 
 ### Material Table
-- **Fields:** `material_id`, `product_id`, `part_id`, `name`, `proportion`, `brand`, `original_material_name`, `made_in_france`, `solution_dyed`, `recycled`
+- **Fields:** `material_id`, `product_id`, `part_id`, `part_name`,`material_name`, `material_proportion`, `brand`, `original_material_name`, `made_in_france`, `solution_dyed`, `recycled`
 - **Rationale:**  
   Each fabric part may contain multiple material types, each with its associated percentage and metadata. The material names undergo normalization and fuzzy matching to ensure consistency, and additional fields capture metadata (e.g., whether the material is recycled or made in France). This granular level of detail supports detailed material analyses and quality checks.
 
