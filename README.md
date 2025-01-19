@@ -53,8 +53,6 @@ Many clothing products specify their **fiber composition** (“50% cotton, 30% p
 
 ## Project Structure
 
-A typical layout might look like this:
-
 ```
 ├── /data
 │   └──data.csv
