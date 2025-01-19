@@ -12,8 +12,15 @@ from src.data_cleaning import (
 )
 from src.models import Product, Part, Fiber
 from src.sql_export import SQLExporter
+from src.constants import METADATA_DICT
 
 logging.basicConfig(level=logging.INFO)
+
+def is_not_empty_or_false(s: str|bool) -> bool:
+    if isinstance(s, bool):
+        return s
+    
+    return not (s is None or s == "")
 
 
 def build_frequency_map(csv_path: str) -> Dict[str, int]:
@@ -179,9 +186,9 @@ def main(csv_path: str = "data/data.csv"):
     part_columns = [
         "part_id INTEGER PRIMARY KEY",  # We'll use the part_id from the model (unique).
         "product_id TEXT",
-        "name TEXT",
-        "weight REAL",
-        "weight_unit TEXT",
+        "part_name TEXT",
+        "part_weight REAL",
+        "part_weight_unit TEXT",
     ]
     part_data_to_insert = []
     for p in products:
@@ -190,9 +197,9 @@ def main(csv_path: str = "data/data.csv"):
                 {
                     "part_id": part.part_id,
                     "product_id": part.product_id,
-                    "name": part.name,
-                    "weight": part.weight,
-                    "weight_unit": part.weight_unit,
+                    "part_name": part.name,
+                    "part_weight": part.weight,
+                    "part_weight_unit": part.weight_unit,
                 }
             )
 
@@ -203,8 +210,9 @@ def main(csv_path: str = "data/data.csv"):
         "fiber_id INTEGER PRIMARY KEY AUTOINCREMENT",
         "product_id TEXT",
         "part_id INTEGER",
-        "name TEXT",
-        "proportion REAL",
+        "part_name TEXT",
+        "fiber_name TEXT",
+        "fiber_proportion REAL",
         "brand TEXT",
         "original_fiber_name TEXT",
         "made_in_france BOOLEAN",
@@ -219,16 +227,18 @@ def main(csv_path: str = "data/data.csv"):
                 record = {
                     "product_id": mat.product_id,
                     "part_id": mat.part_id,
-                    "name": mat.name,
-                    "proportion": mat.proportion,
+                    "part_name": part.name,
+                    "fiber_name": mat.name,
+                    "fiber_proportion": mat.proportion,
                     "brand": mat.brand,
                     "original_fiber_name": mat.original_fiber_name,
                     "made_in_france": mat.made_in_france,
                     "solution_dyed": mat.solution_dyed,
                     "recycled": mat.recycled,
                 }
+                if  is_not_empty_or_false(record["fiber_name"]) or any([is_not_empty_or_false(record[k]) for k in METADATA_DICT]):
 
-                fiber_data_to_insert.append(record)
+                    fiber_data_to_insert.append(record)
     exporter.export_to_sql(fiber_table_name, fiber_columns, fiber_data_to_insert)
 
     logging.info("Done exporting data!")
