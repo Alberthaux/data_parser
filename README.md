@@ -152,7 +152,7 @@ To run the **entire pipeline**:
    ```bash
     python main.py -p data/data.csv 
    ```
-   it will create a products.bb file
+   It will create a products.db file containing the output data.
 
 ### 3. Analyse products.db 
 
