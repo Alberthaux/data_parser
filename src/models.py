@@ -4,12 +4,12 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 
-class Fiber(BaseModel):
+class Material(BaseModel):
     product_id: str
     part_id: int
     name: str  # final cleaned name
     proportion: Optional[float]
-    original_fiber_name: str = ""
+    original_material_name: str = ""
     brand: str = ""  # e.g. "cordura" or "sorona"
     made_in_france: bool = False
     solution_dyed: bool = False
@@ -22,7 +22,7 @@ class Part(BaseModel):
     name: str
     weight: Optional[float] = None
     weight_unit: Optional[str] = None
-    fibers: List[Fiber] = []
+    materials: List[Material] = []
 
 
 class Product(BaseModel):

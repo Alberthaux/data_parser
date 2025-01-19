@@ -1,7 +1,7 @@
 
 # Care Label Parsing & Data Pipeline
 
-This repository provides a **data pipeline** for parsing clothing care labels, extracting fiber compositions, weights, and various metadata fields (e.g., brand names, “made in France,” “solution-dyed,” “recycled,” etc.). The parsed results are then stored in a relational database.
+This repository provides a **data pipeline** for parsing clothing care labels, extracting material compositions, weights, and various metadata fields (e.g., brand names, “made in France,” “solution-dyed,” “recycled,” etc.). The parsed results are then stored in a relational database.
 
 ## Table of Contents
 
@@ -20,12 +20,12 @@ This repository provides a **data pipeline** for parsing clothing care labels, e
 
 ## Overview
 
-Many clothing products specify their **fiber composition** (“50% cotton, 30% polyester, …”) along with **fabric part labels** (“Main: …”, “Lining: …”, etc.). This pipeline:
+Many clothing products specify their **material composition** (“50% cotton, 30% polyester, …”) along with **fabric part labels** (“Main: …”, “Lining: …”, etc.). This pipeline:
 
 1. **Reads** CSV files containing columns like `product_id`, `product_category`, and `care_label`.
 2. **Parses** each care label, extracting:
    - **Parts** (e.g. “Main,” “Contrast,” “Lining,” “Unknown”).
-   - **Fibers** and their percentages.
+   - **Materials** and their percentages.
    - **Weight** (e.g. “300 g/m²”).
    - **Metadata** like brand names (“cordura,” “sorona”) or flags for “made_in_france,” “recycled,” etc.
 3. **Stores** the parsed information in a SQLite database (or any other DB supported by the included exporter).
@@ -35,18 +35,18 @@ Many clothing products specify their **fiber composition** (“50% cotton, 30% p
 ## Features
 
 - **Regex-based** extraction of:
-  - Fiber percentages (e.g. `(\d+)% cotton`).
+  - Material percentages (e.g. `(\d+)% cotton`).
   - Fabric weights (e.g. `300 g/m²`).
   - Labeled sections (`Main: …`, `Reinforcement: …`, etc.).
 - **Metadata detection** (brands, “fr,” “solution dyed,” “recycled,” …) with easy extension in `METADATA_DICT`.
-- **Fuzzy matching** of fiber names to canonical forms (`FuzzyFiberMatcher`).
+- **Fuzzy matching** of material names to canonical forms (`FuzzyMaterialMatcher`).
 - **Two-phase** approach:
-  1. Build frequency maps of all encountered fiber names.
+  1. Build frequency maps of all encountered material names.
   2. Pre-populate fuzzy matching with frequent terms.
 - **Data schema**:
   - **Product** (product-level info like category, sub-category).
   - **Part** (each labeled part in the care label).
-  - **Fiber** (each fiber composition line).
+  - **Material** (each material composition line).
 - **SQL export** with `SQLExporter`: automatically creates tables and inserts data.
 
 ---
@@ -63,11 +63,11 @@ Many clothing products specify their **fiber composition** (“50% cotton, 30% p
 │      ├── WEIGHT_REGEX
 │      └── METADATA_DICT
 │   └── data_cleaning.py
-│      ├── class FiberParser
-│      ├── class FuzzyFiberMatcher
-│      └── helpers (normalize_fiber_name, split_category_subcategory, etc.)
+│      ├── class MaterialParser
+│      ├── class FuzzyMaterialMatcher
+│      └── helpers (normalize_material_name, split_category_subcategory, etc.)
 │   └── models.py
-│      ├── class Fiber
+│      ├── class Material
 │      ├── class Part
 │      └── class Product
 │   └── sql_export.py
@@ -88,7 +88,7 @@ Many clothing products specify their **fiber composition** (“50% cotton, 30% p
 - **`constants.py`**  
   Contains compiled regex objects and metadata tokens (`METADATA_DICT`).
 - **`data_cleaning.py`**  
-  Houses the **`FiberParser`** (core parsing logic) and **`FuzzyFiberMatcher`**.  
+  Houses the **`MaterialParser`** (core parsing logic) and **`FuzzyMaterialMatcher`**.  
 - **`models.py`**  
   Pydantic data models for `Product`, `Part`, and `Material`.  
 - **`main.py`**  
@@ -124,15 +124,15 @@ Many clothing products specify their **fiber composition** (“50% cotton, 30% p
 
 ### 1. Data Cleaning & Parsing
 
-The **`data_cleaning.FiberParser`** class is the primary entry point for parsing. For example:
+The **`data_cleaning.MaterialParser`** class is the primary entry point for parsing. For example:
 
 ```python
-from data_cleaning import FiberParser
+from data_cleaning import MaterialParser
 
 care_label_text = "Main: 50% HPPE, 16% nylon, 9% spandex, 25% metal fibre...
 Reinforcement: 100% Cordura® Recycled"
 
-parsed = FiberParser.parse_care_label(care_label_text, verbose=True)
+parsed = MaterialParser.parse_care_label(care_label_text, verbose=True)
 
 print(parsed)
 ```
@@ -178,8 +178,8 @@ Text normalization is a critical step in ensuring consistency across the parsed 
 ### Category, Part Name, and Subcategory
 These fields are standardized by converting them to lowercase and ensuring they are in their singular form. For example, `"ACCESSORIES/PHONE-CASES"` becomes `"accessory"` for the category and `"phone-case"` for the subcategory.
 
-### Fiber Name Regularization
-Fiber names, which can often be messy due to variations in spelling, punctuation, or case, are first normalized (e.g., lowercased and stripped of extraneous characters) and then further refined using fuzzy matching with `fuzzywuzzy`. This ensures that similar fiber descriptions (e.g., `"Cottons"`, `"cotton"`, or `"cotton®"`) are mapped to a canonical version such as `"cotton"`. We also store brand or other metadata information in separate columns "brand", "made_in_france"...
+### Material Name Regularization
+Material names, which can often be messy due to variations in spelling, punctuation, or case, are first normalized (e.g., lowercased and stripped of extraneous characters) and then further refined using fuzzy matching with `fuzzywuzzy`. This ensures that similar material descriptions (e.g., `"Cottons"`, `"cotton"`, or `"cotton®"`) are mapped to a canonical version such as `"cotton"`. We also store brand or other metadata information in separate columns "brand", "made_in_france"...
 
 This normalization process significantly improves the consistency and quality of the final exported data, making downstream analysis more reliable.
 
@@ -197,15 +197,15 @@ The pipeline is designed around three core models which map directly to database
 - **Rationale:**  
   A product's care label may include multiple parts (e.g., "main", "lining", "reinforcement"). By storing these in a dedicated Part table and linking them to the product via `product_id`, we capture this hierarchical structure and facilitate queries that differentiate between different fabric parts.
 
-### Fiber Table
-- **Fields:** `fiber_id`, `product_id`, `part_id`, `name`, `proportion`, `brand`, `original_fiber_name`, `made_in_france`, `solution_dyed`, `recycled`
+### Material Table
+- **Fields:** `material_id`, `product_id`, `part_id`, `name`, `proportion`, `brand`, `original_material_name`, `made_in_france`, `solution_dyed`, `recycled`
 - **Rationale:**  
-  Each fabric part may contain multiple fiber types, each with its associated percentage and metadata. The fiber names undergo normalization and fuzzy matching to ensure consistency, and additional fields capture metadata (e.g., whether the fiber is recycled or made in France). This granular level of detail supports detailed material analyses and quality checks.
+  Each fabric part may contain multiple material types, each with its associated percentage and metadata. The material names undergo normalization and fuzzy matching to ensure consistency, and additional fields capture metadata (e.g., whether the material is recycled or made in France). This granular level of detail supports detailed material analyses and quality checks.
 
 The separation of data into these tables follows a normalized relational design. This approach:
 - Minimizes data redundancy.
 - Improves data integrity.
-- Facilitates complex queries (e.g., summing fiber percentages per part or categorizing products by subcategory).
+- Facilitates complex queries (e.g., summing material percentages per part or categorizing products by subcategory).
 
 
 ## Extending & Customizing
@@ -215,7 +215,7 @@ The separation of data into these tables follows a normalized relational design.
    - Extend `METADATA_SPECS` with new fields.
 
 2. **Fuzzy Matching**  
-   - Tweak `FuzzyFiberMatcher` to adjust threshold or implement advanced matching logic.
+   - Tweak `FuzzyMaterialMatcher` to adjust threshold or implement advanced matching logic.
 
 3. **Custom DB**  
    - Modify `SQLExporter` for PostgreSQL, MySQL, or other database systems.

@@ -16,9 +16,9 @@ import inflect
 
 
 
-class FiberParser:
+class MaterialParser:
     """
-    Encapsulates logic for parsing fiber composition, weight, brand extraction, etc.
+    Encapsulates logic for parsing material composition, weight, brand extraction, etc.
     All metadata parsing is self-contained in this class.
     """
 
@@ -83,25 +83,25 @@ class FiberParser:
         return metadata
 
     @classmethod
-    def parse_fibers_and_weight(
+    def parse_materials_and_weight(
         cls, text: str, verbose: bool = False
     ) -> Tuple[Optional[float], Optional[str], List[Dict[str, object]]]:
         """
-        Parse fibers and weight from text.
+        Parse materials and weight from text.
 
         Returns:
-            (weight_value, weight_unit, fibers_list) where fibers_list is a list of dicts containing:
-              - name: the cleaned fiber name.
+            (weight_value, weight_unit, materials_list) where materials_list is a list of dicts containing:
+              - name: the cleaned material name.
               - brand: detected brand if any.
               - mix: percentage composition.
-              - original_fiber_name: raw fiber name text.
+              - original_material_name: raw material name text.
               - made_in_france: bool.
               - solution_dyed: bool.
               - recycled: bool.
         """
-        fibers: List[Dict[str, object]] = []
+        materials: List[Dict[str, object]] = []
 
-        # Extract fiber details using FIBER_REGEX.
+        # Extract material details using FIBER_REGEX.
         for match in FIBER_REGEX.finditer(text):
             pct_str, raw_name = match.groups()
             try:
@@ -110,22 +110,22 @@ class FiberParser:
                 pct_val = None
 
             metadata = cls._apply_metadata_specs(raw_name)
-            fiber_info = {
+            material_info = {
                 "name": metadata["clean_text"],
                 "brand": metadata["brand"],
                 "mix": pct_val,
-                "original_fiber_name": raw_name.strip(),
+                "original_material_name": raw_name.strip(),
                 "made_in_france": metadata["made_in_france"],
                 "solution_dyed": metadata["solution_dyed"],
                 "recycled": metadata["recycled"],
             }
-            fibers.append(fiber_info)
+            materials.append(material_info)
             if verbose:
-                logging.info(f"Parsed Fiber: {fiber_info}")
+                logging.info(f"Parsed Material: {material_info}")
 
         # Extract weight from text.
         weight_value, weight_unit = cls._extract_weight(text, verbose=verbose)
-        return weight_value, weight_unit, fibers
+        return weight_value, weight_unit, materials
 
     @staticmethod
     def _extract_weight(
@@ -161,15 +161,15 @@ class FiberParser:
             - fabric_part: The label (or "Unknown" if no label).
             - weight: The weight value, or None.
             - weight_unit: The unit associated with the weight, or None.
-            - fibers: A list of fiber details.
+            - materials: A list of material details.
         """
         def process_text(text: str, label: str = "Unknown") -> Dict[str, object]:
-            w_val, w_unit, fibers = cls.parse_fibers_and_weight(text, verbose=verbose)
+            w_val, w_unit, materials = cls.parse_materials_and_weight(text, verbose=verbose)
             return {
                 "fabric_part": label,
                 "weight": w_val,
                 "weight_unit": w_unit,
-                "fibers": fibers,
+                "materials": materials,
             }
 
         parts = []
@@ -197,9 +197,9 @@ class FiberParser:
 
 
 
-class FuzzyFiberMatcher:
+class FuzzyMaterialMatcher:
     """
-    Manages canonical fiber names for fuzzy matching.
+    Manages canonical material names for fuzzy matching.
     """
 
     def __init__(
@@ -208,42 +208,42 @@ class FuzzyFiberMatcher:
         """
         Args:
             threshold: The minimum score for a fuzzy match to be valid.
-            initial_data: Pre-populated canonical fiber names with usage frequencies.
+            initial_data: Pre-populated canonical material names with usage frequencies.
         """
-        self.canonical_fibers: Dict[str, int] = (
+        self.canonical_materials: Dict[str, int] = (
             initial_data.copy() if initial_data else {}
         )
         self.threshold = threshold
 
-    def get_canonical_fiber(self, name: str) -> str:
+    def get_canonical_material(self, name: str) -> str:
         """
-        Fuzzy match a given fiber name against known canonical names.
+        Fuzzy match a given material name against known canonical names.
         Adds it as a new entry if no match exceeds the threshold.
         """
-        if not self.canonical_fibers:
-            self.canonical_fibers[name] = 1
+        if not self.canonical_materials:
+            self.canonical_materials[name] = 1
             return name
 
         matches = process.extract(
-            name, self.canonical_fibers.keys(), limit=None, scorer=fuzz.token_sort_ratio
+            name, self.canonical_materials.keys(), limit=None, scorer=fuzz.token_sort_ratio
         )
         valid_matches = [
             (match, score) for match, score in matches if score >= self.threshold
         ]
         if valid_matches:
             best_candidate, _ = max(
-                valid_matches, key=lambda x: self.canonical_fibers[x[0]]
+                valid_matches, key=lambda x: self.canonical_materials[x[0]]
             )
-            self.canonical_fibers[best_candidate] += 1
+            self.canonical_materials[best_candidate] += 1
             return best_candidate
 
-        self.canonical_fibers[name] = 1
+        self.canonical_materials[name] = 1
         return name
 
 
-def normalize_fiber_name(name: str) -> str:
+def normalize_material_name(name: str) -> str:
     """
-    Normalize a fiber name by lowercasing, replacing hyphens with spaces,
+    Normalize a material name by lowercasing, replacing hyphens with spaces,
     removing unwanted punctuation (except slashes), and collapsing spaces.
     """
     name = name.lower().strip().replace("-", " ")
