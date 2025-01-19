@@ -85,6 +85,8 @@ Many clothing products specify their **material composition** (“50% cotton, 30
 
 ### Key Files
 
+- **`notebook.ipynb`**
+  Perform basic data analysis on the data to assess its quality.
 - **`constants.py`**  
   Contains compiled regex objects and metadata tokens (`METADATA_DICT`).
 - **`data_cleaning.py`**  
@@ -150,7 +152,12 @@ To run the **entire pipeline**:
    ```bash
     python main.py -p data/data.csv 
    ```
-3. Analyse products.db in a notebook, see notebook.ipynb for reference.
+   it will create a products.bb file
+
+### 3. Analyse products.db 
+
+  See notebook.ipynb for reference
+
 ---
 
 ## Configuration
