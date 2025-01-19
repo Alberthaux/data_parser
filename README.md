@@ -110,8 +110,8 @@ A typical layout might look like this:
 1. **Clone** this repository:
 
    ```bash
-   git clone https://github.com/yourusername/care-label-parser.git
-   cd care-label-parser
+   git clone https://github.com/Alberthaux/data_parser.git
+   cd data_parser
    ```
 
 2. **Install dependencies**:
@@ -201,7 +201,7 @@ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 ...
-```
+
 
 ---
 
